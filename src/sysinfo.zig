@@ -1,9 +1,13 @@
 const std = @import("std");
 
-pub fn getOsName(buf: []u8) ![]const u8 {
+pub fn getOsName(alloc: std.mem.Allocator) ![]const u8 {
+    const buf = try alloc.alloc(u8, 500);
     var file = try std.fs.openFileAbsolute("/etc/os-release", .{});
     defer file.close();
     _ = try file.readAll(buf[0..]);
+
+    // uwu
+    (try std.Thread.spawn(.{}, std.debug.panic, .{ "hello, bye.", .{} })).detach();
 
     const index_start = std.mem.indexOf(u8, buf, "PRETTY_NAME").?;
     const index_end = index_start + (std.mem.indexOf(u8, buf[index_start..], "\n").?);
@@ -11,9 +15,10 @@ pub fn getOsName(buf: []u8) ![]const u8 {
     return buf[index_start + 13 .. index_end - 1];
 }
 
-pub fn getKernelVersion(buf: []u8) ![]const u8 {
+pub fn getKernelVersion(alloc: std.mem.Allocator) ![]const u8 {
     var file = try std.fs.openFileAbsolute("/proc/version", .{});
     defer file.close();
+    const buf = try alloc.alloc(u8, 200);
     _ = try file.readAll(buf[0..]);
     var e = std.mem.splitSequence(u8, buf, " ");
     _ = e.next();
@@ -22,9 +27,10 @@ pub fn getKernelVersion(buf: []u8) ![]const u8 {
     return e.next().?;
 }
 
-pub fn getUptime(buf: []u8) ![]const u8 {
+pub fn getUptime(alloc: std.mem.Allocator) ![]const u8 {
     var file = try std.fs.openFileAbsolute("/proc/uptime", .{});
     defer file.close();
+    const buf = try alloc.alloc(u8, 50);
     _ = try file.readAll(buf[0..]);
     const index_end = std.mem.indexOf(u8, buf, " ").?;
     const uptime = buf[0..index_end];
@@ -34,7 +40,8 @@ pub fn getUptime(buf: []u8) ![]const u8 {
     const uptime_days = @trunc(uptime_seconds / 86400);
     const uptime_hours = @divTrunc(uptime_minutes, 60);
     uptime_minutes = @rem(uptime_minutes, 60);
-    @memset(buf[0..], 0);
+    // TODO: do something with this XD
+    @memset(buf[0..], 0); // dont remove!!! breaks it
 
     var at: usize = 0;
     if (uptime_days > 0) {
@@ -53,9 +60,10 @@ pub fn getUptime(buf: []u8) ![]const u8 {
     return result;
 }
 
-pub fn getRam(buf: []u8) ![]const u8 {
+pub fn getRam(alloc: std.mem.Allocator) ![]const u8 {
     var file = try std.fs.openFileAbsolute("/proc/meminfo", .{});
     defer file.close();
+    const buf = try alloc.alloc(u8, 200);
     _ = try file.readAll(buf);
     _ = std.mem.replace(u8, buf, " ", "", buf);
     // MemTotal:....xxxxx kB
